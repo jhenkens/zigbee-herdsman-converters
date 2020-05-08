@@ -9865,6 +9865,7 @@ const devices = [
             await configureReporting.thermostatPIHeatingDemand(endpoint);
         },
     },
+<<<<<<< Updated upstream
 
     // Waxman
     {
@@ -9883,6 +9884,35 @@ const devices = [
             ]);
             await configureReporting.batteryPercentageRemaining(endpoint);
             await configureReporting.temperature(endpoint);
+=======
+    
+    // Hughes
+    {
+        zigbeeModel: ['   Bell'],
+	model: 'DRBELL',
+	vendor: 'Hughes',
+	description: 'Hughes Sage Doorbell Sensor',
+	supports: '2 doorbells',
+	fromZigbee: [],
+	toZigbee: [],
+        meta: {configureKey: 1},
+	configure: async (device, coordinatorEndpoint) => {
+            const endpoint = device.getEndpoint(18);
+            console.log(endpoint);
+	    const binds = [
+                'ssIasZone'
+            ];
+            /* const coordDevice = Device.byIeeeAddr(coordinatorEndpoint.deviceIeeeAddress);
+
+	    await endpoint.write('ssIasZone', {'iasCieAddr': coordDevice.ieeeAddr});
+	    debug.log(`Interview - IAS - wrote iasCieAddr`);
+
+	    const stateBefore = await endpoint.read('ssIasZone', ['iasCieAddr', 'zoneState']);
+            debug.log(`Interview - IAS - before enrolling state: '${JSON.stringify(stateBefore)}'`);
+*/
+
+	    await bind(endpoint, coordinatorEndpoint, binds);
+>>>>>>> Stashed changes
         },
     },
 ];
