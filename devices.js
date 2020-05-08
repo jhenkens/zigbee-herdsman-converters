@@ -6830,8 +6830,8 @@ const devices = [
         vendor: 'Weiser',
         description: 'SmartCode 10',
         supports: 'lock/unlock, battery',
-        fromZigbee: [fz.lock, fz.lock_operation_event, fz.battery],
-        toZigbee: [tz.generic_lock],
+        fromZigbee: [fz.lock, fz.lock_operation_event, fz.battery, fz.lock_programming_event, fz.lock_pin_code_rep],
+        toZigbee: [tz.generic_lock, tz.pincode_lock],
         meta: {configureKey: 3},
         configure: async (device, coordinatorEndpoint) => {
             const endpoint = device.getEndpoint(2);
@@ -8325,7 +8325,7 @@ const devices = [
         vendor: 'Lutron',
         description: 'Connected bulb remote control',
         supports: 'on/off, brightness',
-        fromZigbee: [fz.insta_down_hold, fz.insta_up_hold, fz.LZL4B_onoff, fz.insta_stop],
+        fromZigbee: [fz.LZL4B_handler],
         toZigbee: [],
     },
 

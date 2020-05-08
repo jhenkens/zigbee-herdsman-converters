@@ -330,10 +330,44 @@ const converters = {
         type: 'commandOperationEventNotification',
         convert: (model, msg, publish, options, meta) => {
             const unlockCodes = [2, 9, 14];
+            let sourceName = '';
+            switch (msg.data['opereventsrc']) {
+            case 0:
+                sourceName = 'keypad';
+                break;
+            case 1:
+                sourceName = 'Zigbee';
+                break;
+            case 2:
+                sourceName = 'Manual';
+                break;
+            case 3:
+                sourceName = 'RFID';
+                break;
+            default:
+                sourceName = 'Indeterminate';
+            }
+            const state = unlockCodes.includes(msg.data['opereventcode']) ? 'UNLOCK' : 'LOCK';
             return {
-                state: unlockCodes.includes(msg.data['opereventcode']) ? 'UNLOCK' : 'LOCK',
-                user: msg.data['userid'],
-                source: msg.data['opereventsrc'],
+                state: state,
+                action: state,
+                action_userid: msg.data['userid'],
+                action_source: msg.data['opereventsrc'],
+                action_sourceName: sourceName,
+            };
+        },
+    },
+    lock_programming_event: {
+        cluster: 'closuresDoorLock',
+        type: 'commandProgrammingEventNotification',
+        convert: (model, msg, publish, options, meta) => {
+            const unlockCodes = [2, 9, 14];
+            const state = unlockCodes.includes(msg.data['opereventcode']) ? 'UNLOCK' : 'LOCK';
+            return {
+                state: state,
+                action: state,
+                action_userid: msg.data['userid'],
+                action_source: msg.data['opereventsrc'],
             };
         },
     },
@@ -344,6 +378,31 @@ const converters = {
             if (msg.data.hasOwnProperty('lockState')) {
                 return {state: msg.data.lockState == 2 ? 'UNLOCK' : 'LOCK'};
             }
+        },
+    },
+    lock_pin_code_rep: {
+        cluster: 'closuresDoorLock',
+        type: ['commandGetPinCodeRsp'],
+        convert: (model, msg, publish, options, meta) => {
+            const {data} = msg;
+            let status = '';
+            switch (data.userstatus) {
+            case 0:
+                status = 'Available';
+                break;
+            case 1:
+                status = 'Enabled';
+                break;
+            case 2:
+                status = 'Disabled';
+                break;
+            default:
+                status = 'Not Supported';
+            }
+            const userId = data.userid.toString();
+            const result = {users: {}};
+            result.users[userId] = status;
+            return result;
         },
     },
     battery: {
@@ -3252,6 +3311,27 @@ const converters = {
                 action: msg.data.level,
                 transition_time: msg.data.transtime,
             };
+        },
+    },
+    LZL4B_handler: {
+        cluster: 'genLevelCtrl',
+        type: ['commandStep', 'commandStepWithOnOff', 'commandMoveToLevelWithOnOff', 'commandStop'],
+        convert: (model, msg, publish, options, meta) => {
+            switch (msg.type) {
+            case 'commandMoveToLevelWithOnOff':
+                if (msg.data.level == 254) {
+                    return {action: 'on-press'};
+                }
+                return {action: 'off-press'};
+            case 'commandStep':
+                return {action: 'down-press'};
+            case 'commandStepWithOnOff':
+                return {action: 'up-press'};
+            case 'commandStop':
+                return {action: 'release'};
+            default:
+                throw new Error('Message not mapped');
+            }
         },
     },
     ZGRC013_cmdOn: {

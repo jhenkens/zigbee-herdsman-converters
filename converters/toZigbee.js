@@ -1313,6 +1313,55 @@ const converters = {
             await entity.read('closuresDoorLock', ['lockState']);
         },
     },
+    pincode_lock: {
+        key: 'pin_code',
+        convertSet: async (entity, key, value, meta) => {
+            const userId = value.userId;
+            const pinCode = value.pinCode;
+            if ( isNaN(userId) ) {
+                throw new Error('userId must be numbers');
+            }
+            if (pinCode === undefined) {
+                await entity.command(
+                    'closuresDoorLock',
+                    'clearPinCode',
+                    {
+                        'userid': userId,
+                    },
+                    getOptions(meta.mapped),
+                );
+            } else {
+                if (isNaN(pinCode)) {
+                    throw new Error('pinCode must be a number or pinCode');
+                }
+                await entity.command(
+                    'closuresDoorLock',
+                    'setPinCode',
+                    {
+                        'userid': userId,
+                        'userstatus': 1,
+                        'usertype': 0,
+                        'pincodevalue': pinCode.toString(),
+                    },
+                    getOptions(meta.mapped),
+                );
+            }
+        },
+        convertGet: async (entity, key, meta) => {
+            const userId = meta.message.pin_code.userId;
+            if ( isNaN(userId) ) {
+                throw new Error('userId must be numbers');
+            }
+            await entity.command(
+                'closuresDoorLock',
+                'getPinCode',
+                {
+                    'userid': userId,
+                },
+                getOptions(meta.mapped),
+            );
+        },
+    },
     gledopto_light_onoff_brightness: {
         key: ['state', 'brightness', 'brightness_percent'],
         convertSet: async (entity, key, value, meta) => {
