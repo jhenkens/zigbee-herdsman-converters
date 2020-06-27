@@ -354,10 +354,31 @@ const converters = {
                 14: 'manual_unlock',
                 15: 'non_access_user_operational_event',
             };
+            const sourceNameLookup = {
+                0: 'Keypad',
+                1: 'Zigbee',
+                2: 'Manual',
+                3: 'RFID'
+            };
 
             return {
                 action: lookup[msg.data['opereventcode']],
                 action_user: msg.data['userid'],
+                action_source: msg.data['opereventsrc'],
+                action_sourceName: sourceNameLookup[msg.data['opereventsrc']],
+            };
+        },
+    },
+    lock_programming_event: {
+        cluster: 'closuresDoorLock',
+        type: 'commandProgrammingEventNotification',
+        convert: (model, msg, publish, options, meta) => {
+            const unlockCodes = [2, 9, 14];
+            const state = unlockCodes.includes(msg.data['opereventcode']) ? 'UNLOCK' : 'LOCK';
+            return {
+                state: state,
+                action: state,
+                action_userid: msg.data['userid'],
                 action_source: msg.data['opereventsrc'],
             };
         },
@@ -373,6 +394,31 @@ const converters = {
                     lock_state: lookup[msg.data['lockState']],
                 };
             }
+        },
+    },
+    lock_pin_code_rep: {
+        cluster: 'closuresDoorLock',
+        type: ['commandGetPinCodeRsp'],
+        convert: (model, msg, publish, options, meta) => {
+            const {data} = msg;
+            let status = '';
+            switch (data.userstatus) {
+            case 0:
+                status = 'Available';
+                break;
+            case 1:
+                status = 'Enabled';
+                break;
+            case 2:
+                status = 'Disabled';
+                break;
+            default:
+                status = 'Not Supported';
+            }
+            const userId = data.userid.toString();
+            const result = {users: {}};
+            result.users[userId] = status;
+            return result;
         },
     },
     battery: {
