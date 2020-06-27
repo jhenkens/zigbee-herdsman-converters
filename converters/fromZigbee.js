@@ -3623,6 +3623,27 @@ const converters = {
             };
         },
     },
+    LZL4B_handler: {
+        cluster: 'genLevelCtrl',
+        type: ['commandStep', 'commandStepWithOnOff', 'commandMoveToLevelWithOnOff', 'commandStop'],
+        convert: (model, msg, publish, options, meta) => {
+            switch (msg.type) {
+            case 'commandMoveToLevelWithOnOff':
+                if (msg.data.level == 254) {
+                    return {action: 'on-press'};
+                }
+                return {action: 'off-press'};
+            case 'commandStep':
+                return {action: 'down-press'};
+            case 'commandStepWithOnOff':
+                return {action: 'up-press'};
+            case 'commandStop':
+                return {action: 'release'};
+            default:
+                throw new Error('Message not mapped');
+            }
+        },
+    },
     ZGRC013_cmdOn: {
         cluster: 'genOnOff',
         type: 'commandOn',
