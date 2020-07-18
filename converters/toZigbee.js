@@ -1437,7 +1437,7 @@ const converters = {
             if ( isNaN(userId) ) {
                 throw new Error('userId must be numbers');
             }
-            if (pinCode === undefined) {
+            if (pinCode === undefined || pinCode === null) {
                 await entity.command(
                     'closuresDoorLock',
                     'clearPinCode',

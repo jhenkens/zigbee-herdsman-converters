@@ -12,6 +12,12 @@
 const common = require('./common');
 const utils = require('./utils');
 
+const lockSourceNameLookup = {
+    0: 'Keypad',
+    1: 'Zigbee',
+    2: 'Manual',
+    3: 'RFID',
+};
 const occupancyTimeout = 90; // In seconds
 
 const defaultPrecision = {
@@ -354,18 +360,12 @@ const converters = {
                 14: 'manual_unlock',
                 15: 'non_access_user_operational_event',
             };
-            const sourceNameLookup = {
-                0: 'Keypad',
-                1: 'Zigbee',
-                2: 'Manual',
-                3: 'RFID'
-            };
 
             return {
                 action: lookup[msg.data['opereventcode']],
                 action_user: msg.data['userid'],
                 action_source: msg.data['opereventsrc'],
-                action_sourceName: sourceNameLookup[msg.data['opereventsrc']],
+                action_sourceName: lockSourceNameLookup[msg.data['opereventsrc']],
             };
         },
     },
@@ -373,13 +373,21 @@ const converters = {
         cluster: 'closuresDoorLock',
         type: 'commandProgrammingEventNotification',
         convert: (model, msg, publish, options, meta) => {
-            const unlockCodes = [2, 9, 14];
-            const state = unlockCodes.includes(msg.data['opereventcode']) ? 'UNLOCK' : 'LOCK';
+            const lookup = {
+                0: 'unknown',
+                1: 'master_code_changed',
+                2: 'pin_code_added',
+                3: 'pin_code_deleted',
+                4: 'pin_code_changed',
+                5: 'rfid_code_added',
+                6: 'rfid_code_deleted',
+            };
+
             return {
-                state: state,
-                action: state,
-                action_userid: msg.data['userid'],
-                action_source: msg.data['opereventsrc'],
+                action: lookup[msg.data['programeventcode']],
+                action_user: msg.data['userid'],
+                action_source: msg.data['programeventsrc'],
+                action_sourceName: lockSourceNameLookup[msg.data['programeventsrc']],
             };
         },
     },
@@ -402,12 +410,16 @@ const converters = {
         convert: (model, msg, publish, options, meta) => {
             const {data} = msg;
             let status = '';
+            let pinCodeValue = null;
             switch (data.userstatus) {
             case 0:
                 status = 'Available';
                 break;
             case 1:
                 status = 'Enabled';
+                if (options && options.read_pin_value && data.pincodevalue) {
+                    pinCodeValue = data.pincodevalue;
+                }
                 break;
             case 2:
                 status = 'Disabled';
@@ -417,7 +429,7 @@ const converters = {
             }
             const userId = data.userid.toString();
             const result = {users: {}};
-            result.users[userId] = status;
+            result.users[userId] = {status: status, pinCodeValue: pinCodeValue};
             return result;
         },
     },
