@@ -382,7 +382,6 @@ const converters = {
                 5: 'rfid_code_added',
                 6: 'rfid_code_deleted',
             };
-
             return {
                 action: lookup[msg.data['programeventcode']],
                 action_user: msg.data['userid'],

@@ -370,6 +370,29 @@ const livolo = {
     },
 };
 
+const kwikset = {
+    readUserPinCode: async (endpoint, userId) => {
+        await endpoint.command('closuresDoorLock', 'getPinCode', {'userid': userId});
+    },
+    readUserPinCodes: async (endpoint, userLimit) => {
+        for (let i = 0; i < userLimit; i++) {
+            await kwikset.readUserPinCode(endpoint, i);
+        }
+    },
+    readPinCodeAfterProgramming: (endpointId) => (async (type, data, device) => {
+        // When we receive a code updated message, lets read the new value
+        // If we had the device options here (requires change in Zigbee2Mqtt), then we could
+        // check for options && options.read_pin_values, before issuing the read.
+        if (data.type === 'commandProgrammingEventNotification' &&
+            data.cluster === 'closuresDoorLock' &&
+            data.data &&
+            data.data.userid !== undefined
+        ) {
+            await kwikset.readUserPinCode(device.getEndpoint(endpointId), data.data.userid);
+        }
+    }),
+};
+
 const devices = [
     // Xiaomi
     {
@@ -7988,13 +8011,15 @@ const devices = [
         supports: 'lock/unlock, battery',
         fromZigbee: [fz.lock, fz.lock_operation_event, fz.battery, fz.lock_programming_event, fz.lock_pin_code_rep],
         toZigbee: [tz.generic_lock, tz.pincode_lock],
-        meta: {configureKey: 3},
+        meta: {configureKey: 4},
         configure: async (device, coordinatorEndpoint) => {
             const endpoint = device.getEndpoint(2);
             await bind(endpoint, coordinatorEndpoint, ['closuresDoorLock', 'genPowerCfg']);
             await configureReporting.lockState(endpoint);
             await configureReporting.batteryPercentageRemaining(endpoint);
+            await kwikset.readUserPinCodes(endpoint, 30);
         },
+        onEvent: kwikset.readPinCodeAfterProgramming(2),
     },
     {
         zigbeeModel: ['SMARTCODE_DEADBOLT_10T'],

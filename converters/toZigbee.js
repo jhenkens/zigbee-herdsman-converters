@@ -1430,7 +1430,7 @@ const converters = {
         },
     },
     pincode_lock: {
-        key: 'pin_code',
+        key: ['pin_code'],
         convertSet: async (entity, key, value, meta) => {
             const userId = value.userId;
             const pinCode = value.pinCode;
