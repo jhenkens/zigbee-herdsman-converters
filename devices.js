@@ -374,11 +374,6 @@ const kwikset = {
     readUserPinCode: async (endpoint, userId) => {
         await endpoint.command('closuresDoorLock', 'getPinCode', {'userid': userId});
     },
-    readUserPinCodes: async (endpoint, userLimit) => {
-        for (let i = 0; i < userLimit; i++) {
-            await kwikset.readUserPinCode(endpoint, i);
-        }
-    },
     readPinCodeAfterProgramming: (endpointId) => (async (type, data, device) => {
         // When we receive a code updated message, lets read the new value
         // If we had the device options here (requires change in Zigbee2Mqtt), then we could
@@ -8008,17 +8003,18 @@ const devices = [
         model: '9GED18000-009',
         vendor: 'Weiser',
         description: 'SmartCode 10',
-        supports: 'lock/unlock, battery',
+        supports: 'lock/unlock, battery, pin code programming',
         fromZigbee: [fz.lock, fz.lock_operation_event, fz.battery, fz.lock_programming_event, fz.lock_pin_code_rep],
         toZigbee: [tz.generic_lock, tz.pincode_lock],
-        meta: {configureKey: 4},
+        meta: {configureKey: 4, pinCodeCount: 30},
         configure: async (device, coordinatorEndpoint) => {
             const endpoint = device.getEndpoint(2);
             await bind(endpoint, coordinatorEndpoint, ['closuresDoorLock', 'genPowerCfg']);
             await configureReporting.lockState(endpoint);
             await configureReporting.batteryPercentageRemaining(endpoint);
-            await kwikset.readUserPinCodes(endpoint, 30);
         },
+        // Would be great if this could instead call tz.pincode_lock.getPinCode, but I don't know how to get the entity
+        // from the device here
         onEvent: kwikset.readPinCodeAfterProgramming(2),
     },
     {
