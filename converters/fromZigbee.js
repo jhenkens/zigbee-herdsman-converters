@@ -428,7 +428,7 @@ const converters = {
             }
             const userId = data.userid.toString();
             const result = {users: {}};
-            result.users[userId] = {status: status, pin: pinCodeValue};
+            result.users[userId] = {status: status, pin_code: pinCodeValue};
             return result;
         },
     },
