@@ -13,10 +13,10 @@ const common = require('./common');
 const utils = require('./utils');
 
 const lockSourceNameLookup = {
-    0: 'Keypad',
-    1: 'Zigbee',
-    2: 'Manual',
-    3: 'RFID',
+    0: 'keypad',
+    1: 'rf',
+    2: 'manual',
+    3: 'rfid',
 };
 const occupancyTimeout = 90; // In seconds
 
@@ -365,7 +365,7 @@ const converters = {
                 action: lookup[msg.data['opereventcode']],
                 action_user: msg.data['userid'],
                 action_source: msg.data['opereventsrc'],
-                action_sourceName: lockSourceNameLookup[msg.data['opereventsrc']],
+                action_source_name: lockSourceNameLookup[msg.data['opereventsrc']],
             };
         },
     },
@@ -386,7 +386,7 @@ const converters = {
                 action: lookup[msg.data['programeventcode']],
                 action_user: msg.data['userid'],
                 action_source: msg.data['programeventsrc'],
-                action_sourceName: lockSourceNameLookup[msg.data['programeventsrc']],
+                action_source_name: lockSourceNameLookup[msg.data['programeventsrc']],
             };
         },
     },
@@ -412,23 +412,23 @@ const converters = {
             let pinCodeValue = null;
             switch (data.userstatus) {
             case 0:
-                status = 'Available';
+                status = 'available';
                 break;
             case 1:
-                status = 'Enabled';
+                status = 'enabled';
                 if (options && options.read_pin_value && data.pincodevalue) {
                     pinCodeValue = data.pincodevalue;
                 }
                 break;
             case 2:
-                status = 'Disabled';
+                status = 'disabled';
                 break;
             default:
-                status = 'Not Supported';
+                status = 'not_supported';
             }
             const userId = data.userid.toString();
             const result = {users: {}};
-            result.users[userId] = {status: status, pinCodeValue: pinCodeValue};
+            result.users[userId] = {status: status, pin: pinCodeValue};
             return result;
         },
     },
