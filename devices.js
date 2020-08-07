@@ -19,6 +19,7 @@
  * timeout: timeout for commands to this device used in toZigbee.
  */
 
+const common = require('./converters/common');
 const fz = require('./converters/fromZigbee');
 const tz = require('./converters/toZigbee');
 const utils = require('./converters/utils');
@@ -370,22 +371,19 @@ const livolo = {
     },
 };
 
-const kwikset = {
-    readUserPinCode: async (endpoint, userId) => {
-        await endpoint.command('closuresDoorLock', 'getPinCode', {'userid': userId});
-    },
-    readPinCodeAfterProgramming: (endpointId) => (async (type, data, device) => {
+const pincodeLock = {
+    readPinCodeAfterProgramming: async (type, data, device) => {
         // When we receive a code updated message, lets read the new value
-        // If we had the device options here (requires change in Zigbee2Mqtt), then we could
-        // check for options && options.read_pin_values, before issuing the read.
         if (data.type === 'commandProgrammingEventNotification' &&
             data.cluster === 'closuresDoorLock' &&
             data.data &&
-            data.data.userid !== undefined
+            data.data.userid !== undefined &&
+            // Don't read RF events, we can do this with retrieve_state
+            (data.data.programeventsrc === undefined || common.lockSourceName[data.data.programeventsrc] != 'rf')
         ) {
-            await kwikset.readUserPinCode(device.getEndpoint(endpointId), data.data.userid);
+            await utils.getDoorLockPinCode( device.endpoints[0], data.data.userid );
         }
-    }),
+    },
 };
 
 const devices = [
@@ -8015,7 +8013,7 @@ const devices = [
         },
         // Would be great if this could instead call tz.pincode_lock.getPinCode, but I don't know how to get the entity
         // from the device here
-        onEvent: kwikset.readPinCodeAfterProgramming(2),
+        onEvent: pincodeLock.readPinCodeAfterProgramming,
     },
     {
         zigbeeModel: ['SMARTCODE_DEADBOLT_10T'],

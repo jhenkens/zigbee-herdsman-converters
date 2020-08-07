@@ -169,6 +169,10 @@ function hasEndpoints(device, endpoints) {
     return true;
 }
 
+function isInRange(min, max, value) {
+    return value >= min && value <= max;
+}
+
 const getRandomInt = (min, max) =>
     Math.floor(Math.random() * (max - min)) + min;
 
@@ -205,6 +209,16 @@ const replaceInArray = (arr, oldElements, newElements) => {
     return clone;
 };
 
+async function getDoorLockPinCode(entity, user, options = null) {
+    await entity.command(
+        'closuresDoorLock',
+        'getPinCode',
+        {
+            'userid': user,
+        },
+        options | {});
+}
+
 module.exports = {
     rgbToXY,
     hexToXY,
@@ -217,7 +231,9 @@ module.exports = {
     gammaCorrectHSV,
     gammaCorrectRGB,
     getRandomInt,
+    isInRange,
     convertMultiByteNumberPayloadToSingleDecimalNumber,
     convertDecimalValueTo2ByteHexArray,
     replaceInArray,
+    getDoorLockPinCode,
 };

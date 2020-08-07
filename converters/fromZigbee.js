@@ -12,12 +12,6 @@
 const common = require('./common');
 const utils = require('./utils');
 
-const lockSourceNameLookup = {
-    0: 'keypad',
-    1: 'rf',
-    2: 'manual',
-    3: 'rfid',
-};
 const occupancyTimeout = 90; // In seconds
 
 const defaultPrecision = {
@@ -365,7 +359,7 @@ const converters = {
                 action: lookup[msg.data['opereventcode']],
                 action_user: msg.data['userid'],
                 action_source: msg.data['opereventsrc'],
-                action_source_name: lockSourceNameLookup[msg.data['opereventsrc']],
+                action_source_name: common.lockSourceName[msg.data['opereventsrc']],
             };
         },
     },
@@ -386,7 +380,7 @@ const converters = {
                 action: lookup[msg.data['programeventcode']],
                 action_user: msg.data['userid'],
                 action_source: msg.data['programeventsrc'],
-                action_source_name: lockSourceNameLookup[msg.data['programeventsrc']],
+                action_source_name: common.lockSourceName[msg.data['programeventsrc']],
             };
         },
     },
@@ -416,9 +410,7 @@ const converters = {
                 break;
             case 1:
                 status = 'enabled';
-                if (options && options.read_pin_value && data.pincodevalue) {
-                    pinCodeValue = data.pincodevalue;
-                }
+                pinCodeValue = data.pincodevalue;
                 break;
             case 2:
                 status = 'disabled';
@@ -428,7 +420,10 @@ const converters = {
             }
             const userId = data.userid.toString();
             const result = {users: {}};
-            result.users[userId] = {status: status, pin_code: pinCodeValue};
+            result.users[userId] = {status: status};
+            if (options && options.expose_pin && pinCodeValue) {
+                result.users[userId].pin_code = pinCodeValue;
+            }
             return result;
         },
     },

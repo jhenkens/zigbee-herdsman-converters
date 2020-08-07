@@ -1432,20 +1432,20 @@ const converters = {
     pincode_lock: {
         key: ['pin_code'],
         convertSet: async (entity, key, value, meta) => {
-            const userId = value.userId;
-            const pinCode = value.pinCode;
-            if ( isNaN(userId) ) {
-                throw new Error('userId must be numbers');
+            const user = value.user;
+            const pinCode = value.pin_code;
+            if ( isNaN(user) ) {
+                throw new Error('user must be numbers');
             }
-            if (converters.pincode_lock.userIdInRange(meta, userId)) {
-                throw new Error('userId must be in range for device');
+            if (!utils.isInRange(0, meta.mapped.meta.pinCodeCount - 1, user)) {
+                throw new Error('user must be in range for device');
             }
             if (pinCode === undefined || pinCode === null) {
                 await entity.command(
                     'closuresDoorLock',
                     'clearPinCode',
                     {
-                        'userid': userId,
+                        'userid': user,
                     },
                     getOptions(meta.mapped),
                 );
@@ -1457,7 +1457,7 @@ const converters = {
                     'closuresDoorLock',
                     'setPinCode',
                     {
-                        'userid': userId,
+                        'userid': user,
                         'userstatus': 1,
                         'usertype': 0,
                         'pincodevalue': pinCode.toString(),
@@ -1468,40 +1468,24 @@ const converters = {
             return {readAfterWriteTime: 200};
         },
         convertGet: async (entity, key, meta) => {
-            const userId = meta && meta.message && meta.message.pin_code ? meta.message.pin_code.userId : undefined;
-            if ( isNaN(userId) ) {
-                throw new Error('userId must be numbers');
-            }
-            if (converters.pincode_lock.userIdInRange(meta, userId)) {
-                throw new Error('userId must be in range for device');
-            }
-            await converters.pincode_lock.getPinCode(entity, userId, meta);
-        },
-        getPinCode: async (entity, userId, meta) => {
-            await entity.command(
-                'closuresDoorLock',
-                'getPinCode',
-                {
-                    'userid': userId,
-                },
-                getOptions(meta.mapped),
-            );
-        },
-        onReconnect: async (entity, meta) => {
-            if (converters.pincode_lock.pinCodeCountSet(meta)) {
-                const pinCodeCount = meta.mapped.meta.pinCodeCount;
-                for (let i = 0; i < pinCodeCount; i++) {
-                    await converters.pincode_lock.getPinCode(entity, i, meta);
+            const user = meta && meta.message && meta.message.pin_code ? meta.message.pin_code.user : undefined;
+            if (user === undefined) {
+                const max = meta.mapped.meta.pinCodeCount;
+                // Get all
+                const options = getOptions(meta);
+                for (let i = 0; i < max; i++) {
+                    await utils.getDoorLockPinCode(entity, i, options);
                 }
+            } else {
+                if (isNaN(user)) {
+                    throw new Error('user must be numbers');
+                }
+                if (!utils.isInRange(0, meta.mapped.meta.pinCodeCount - 1, user)) {
+                    throw new Error('userId must be in range for device');
+                }
+                await utils.getDoorLockPinCode(entity, user, getOptions(meta));
             }
         },
-        pinCodeCountSet: (meta) => meta &&
-            meta.mapped &&
-            meta.mapped.meta &&
-            meta.mapped.meta.pinCodeCount !== undefined &&
-            !isNaN(meta.mapped.meta.pinCodeCount),
-        userIdInRange: (meta, userId) => (!converters.pincode_lock.pinCodeCountSet(meta) || meta.mapped.meta.pinCodeCount > userId) &&
-            userId >= 0,
     },
     gledopto_light_onoff_brightness: {
         key: ['state', 'brightness', 'brightness_percent'],
